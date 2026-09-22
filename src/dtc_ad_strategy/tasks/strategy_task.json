@@ -1,0 +1,17 @@
+{
+  "name": "strategy_task",
+  "agent": "agent_4",
+  "context": [
+    "product_analysis_task",
+    "pain_points_task",
+    "competitor_ads_task",
+    "landing_pages_task",
+    "demand_signals_task",
+    "performance_task"
+  ],
+  "v2_prefix": "【S0 · 策略合成（§6 / §10.1）】\n你只读 scratch/ 下的 JSON：task0..task5 + router.json + objective.json。\n\n【必答项】\n1. `kano_map{{}}`：对每个卖点做 KANO 分类（基本型 / 期望型 / 兴奋型 / 无差异）。\n2. `fogg_decision{{}}`：判定本轮**主导路径是 M / A / P 中的哪一条**并写明理由（B=MAP）。\n3. `selling_point_map[]`：卖点 ↔ 痛点映射校验，判定三选一（主推 / 需小预算测试 / 缺口机会）。\n4. `budget{{}}`：**必须引用 C5 的真实数据**给出预算分配比例与出价上限（非品牌 CPC 封顶）；C5 为 GAP 时，预算一栏写 GAP 并说明需要的回填数据，不得臆造数字。\n5. `stop_loss{{}}`：按 objective.json 对应的 §4.4 止损信号写，不得自选。\n6. `recommendations[]`：若你认为有更优的 ad_type × objective 组合，只能写在这里，**不得回改 router.json / objective.json**（§4.7）。\n\n【已锁定的上下文】ad_type={ad_type}，objective={objective}，主 KPI={primary_kpi}。\n\n——以下为迁移自旧项目 crew.jsonc task[3] 的原文提示词，一字未改——\n",
+  "description": "结合自身产品参数提炼报告、痛点报告和竞品报告。使用 KANO 模型对我们的产品特性进行分类，并结合福格行为模型输出最终的广告策略（主打什么渠道，核心呈现什么卖点）。\n【模式B 强制项：计划卖点 ↔ 已验证痛点 映射校验】当 Task 0 的输入模式为 B（未发布产品，卖点来自人工简报而非市场验证）时，必须额外输出如下 Markdown 表格，逐行覆盖 Task 0 简报中的每一个计划主打卖点：\n| 计划主打卖点 | 对应的已验证痛点（须附证据：平台+品牌+时间） | 判定 |\n判定只能三选一：① 有需求证据 → 主推（可作主素材卖点）；② 无对应痛点 → 无需求证据，需小预算测试后再决定是否加码；③ 高发痛点但无对应卖点 → 缺口/机会（产品侧补齐，或作为差异化切入角度）。\n铁律：任何被列为主推的卖点，都必须能追溯到 Task 1 中一条带证据的痛点；无证据支撑的卖点不得直接列为主推。",
+  "expected_output": "基于 KANO 模型和福格模型的广告策略指导书（Markdown格式）。模式B下必须含「计划卖点 ↔ 已验证痛点」映射校验表，并明确哪些卖点可主推、哪些需小预算测试、哪些是缺口/机会。",
+  "v2_suffix": "\n【v2 落地要求】最终以 JSON 落盘：kano_map / fogg_decision / selling_point_map[] / budget / stop_loss / recommendations[] / facts / inferences / gaps / sources。",
+  "output_file": "task6_strategy.json"
+}

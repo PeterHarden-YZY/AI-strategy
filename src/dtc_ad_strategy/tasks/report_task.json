@@ -1,0 +1,16 @@
+{
+  "name": "report_task",
+  "agent": "agent_6",
+  "context": [
+    "product_analysis_task",
+    "pain_points_task",
+    "competitor_ads_task",
+    "landing_pages_task",
+    "demand_signals_task",
+    "performance_task",
+    "strategy_task",
+    "creative_task"
+  ],
+  "description": "【S2 · 报告汇总（§10.1）】\n读 scratch/ 全部 JSON，产出 output/strategy_report.md。\n\n【报告开头必须先回显】\n- ad_type（含 decision_note）\n- objective（含 mapping_note）\n- 主 KPI（由 objective 决定，不得自选）\n\n【五问判准：每问必须有答案，缺一即不通过】\n1. 投什么：渠道 + 广告类型 + 受众/关键词层级。\n2. 怎么写：钩子文案 / 卖点排序 / CTA 原文，并**指向 output/creative_brief.md 的具体 asset_id**（报告正文不再复述完整大段文案）。\n3. 落哪里：落地页 URL 或改造要求。\n4. 花多少：预算分配比例 + 出价上限（含非品牌 CPC 封顶）。\n5. 何时停：由 objective 决定的主 KPI 达标线与止损规则，含观察期天数，一律用 §4.4 矩阵。\n\n【§10.1 附加规则】\n- ad_type 为 promo/hybrid 时，报告必须额外包含：活动名称、折扣口径、门槛、优惠码、起止日期、排除项、历史同期活动 campaign 的效率基线（取自 C5；缺失记 GAP）。\n- 活动数字与 router.json.slots.promo.resolved **逐字一致**；上游为「待确认」占位的，报告里同样占位，不得估算。\n- 一致性校验：素材 Brief 的 CTA 与 task3_landing_pages.json 的 CTA 原文是否逐字一致；不一致要点名写出。\n- 每个 GAP 都要显式标注，不得静默跳过。\n\n【无效内容一律不写】无法映射到五问的内容（纯 KANO 表、纯 SWOT、纯 persona）不得入报告（§9.5）。",
+  "expected_output": "output/strategy_report.md：开头回显 ad_type / objective / 主 KPI，随后按五问分章，每章有可执行结论；附口径一致性校验结果与 GAP 清单。"
+}

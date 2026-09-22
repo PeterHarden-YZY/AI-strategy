@@ -1,0 +1,54 @@
+{
+  "task": "T5_historical_performance",
+  "collected_at": "2026-09-22",
+  "source": "Google Ads MCP (customer_id 8890624174, campaign resource, ENABLED only)",
+  "note": "账号累计数据（未加日期限定）。cost_micros / 1,000,000 = 美元。ROAS/CPA/CPC 为派生计算。",
+  "currency_assumption": "USD（US 站），需人工确认",
+  "campaigns": [
+    {"name": "pmax-PD-深色-20260326", "cost": 133943.49, "clicks": 33166, "impr": 3838381, "conv": 461.8, "value": 445049.65, "cpc": 4.04, "cpa": 290.0, "roas": 3.32, "cvr": "1.39%"},
+    {"name": "pmax-PD-深色&浅色-20260810-预算测试", "cost": 36924.39, "clicks": 8533, "impr": 1147118, "conv": 108.0, "value": 120160.95, "cpc": 4.33, "cpa": 341.8, "roas": 3.25, "cvr": "1.27%"},
+    {"name": "Sales-Shopping-pd-dana-260802", "cost": 26394.43, "clicks": 7036, "impr": 855074, "conv": 105.1, "value": 80641.90, "cpc": 3.75, "cpa": 251.0, "roas": 3.06, "cvr": "1.49%"},
+    {"name": "Sales-Search-升降桌中下层漏斗", "cost": 21242.25, "clicks": 4646, "impr": 54177, "conv": 110.7, "value": 72139.14, "cpc": 4.57, "cpa": 191.9, "roas": 3.40, "cvr": "2.38%"},
+    {"name": "Sales-Search-B2B-dana", "cost": 5629.78, "clicks": 795, "impr": 26089, "conv": 7.6, "value": 17283.20, "cpc": 7.08, "cpa": 739.7, "roas": 3.07, "cvr": "0.96%"},
+    {"name": "Sales-Shopping-MCM清库款-Arthur-20260812", "cost": 5196.97, "clicks": 2894, "impr": 393085, "conv": 39.0, "value": 18362.34, "cpc": 1.80, "cpa": 133.2, "roas": 3.53, "cvr": "1.35%"},
+    {"name": "Sales-Shopping-支架-dana-0804", "cost": 4306.86, "clicks": 5225, "impr": 701478, "conv": 94.9, "value": 17255.42, "cpc": 0.82, "cpa": 45.4, "roas": 4.01, "cvr": "1.82%"},
+    {"name": "Sales-Search-支架-中下层漏斗-20260601", "cost": 3570.48, "clicks": 2255, "impr": 25291, "conv": 50.2, "value": 8321.60, "cpc": 1.58, "cpa": 71.1, "roas": 2.33, "cvr": "2.23%"},
+    {"name": "pmax-PD-深色&浅色-20260915新feed", "cost": 2171.09, "clicks": 562, "impr": 72025, "conv": 1.9, "value": 2979.51, "cpc": 3.86, "cpa": 1161.0, "roas": 1.37, "cvr": "0.33%"}
+  ],
+  "totals": {"cost": 239379.74, "clicks": 70112, "conv": 979.3, "value": 785193.71, "blended_roas": 3.28, "blended_cpa": 244.4},
+  "findings": [
+    {
+      "finding": "PMAX 吃掉 72% 预算",
+      "detail": "三条 PMAX 合计 $173,039 / $239,380；单条 'pmax-PD-深色-20260326' 独占 $133,943（56%）",
+      "implication": "单条 campaign 承载过半预算，一旦素材/feed 出问题影响面极大；且 PMAX 内部不透明，无法直接定位到具体素材表现"
+    },
+    {
+      "finding": "★ 支架品类效率最高但预算严重低配",
+      "detail": "Sales-Shopping-支架-dana-0804：CPC $0.82（全场最低）、CPA $45.4（全场最低）、ROAS 4.01（全场最高），但预算仅 $4,307（1.8%）",
+      "implication": "这是明确的可加码标的：同样的钱在支架线能买到 6.4 倍的转化（CPA 45 vs 290）。建议小步加预算测试边际 ROAS 衰减点。",
+      "action": "支架线加预算 20-30%，观察 7 天 ROAS 是否守住 3.5 以上；守住则继续加"
+    },
+    {
+      "finding": "B2B 搜索线 CPA $740，是均值的 3 倍",
+      "detail": "Sales-Search-B2B-dana：CPC $7.08（最高），转化仅 7.6 个，CPA $739.7，ROAS 3.07",
+      "implication": "ROAS 勉强达标靠的是高客单，但转化样本太小（7.6）不足以判断；且 CPA 绝对值高，现金流压力大的月份会先砍它",
+      "action": "设止损线：连续 30 天 CPA > $800 且转化 < 10 则关停或降预算"
+    },
+    {
+      "finding": "★ 新 feed (20260915) 表现崩坏",
+      "detail": "pmax-PD-深色&浅色-20260915新feed：CPA $1,161、ROAS 1.37、CVR 0.33%（其余 campaign CVR 1.3-2.4%）",
+      "implication": "新 feed 上线 1 周，可能仍在学习期；但 CVR 0.33% 显著低于同系列其他 PMAX（1.27-1.39%），feed 质量或素材匹配存疑",
+      "action": "★ 优先核查：新 feed 的商品标题/图片是否与 '深色&浅色' 素材组匹配；给 14 天观察期，ROAS 仍 <2 则回退旧 feed"
+    },
+    {
+      "finding": "搜索漏斗分层已建立且有效",
+      "detail": "'Sales-Search-升降桌中下层漏斗' CVR 2.38%（全场最高），CPA $191.9 优于 PMAX 的 $290",
+      "implication": "中下层漏斗词（高意图）效率优于 PMAX 泛投，说明品牌/品类词承接做得不错",
+      "caveat": "与你的 N-Gram 项目「品牌词/非品牌词物理隔离」方法论一致，此处数据可作为该架构的正向证据"
+    }
+  ],
+  "cross_reference": {
+    "with_task4_seasonality": "Google Trends 显示 9 月为全年搜索兴趣谷底（值 4，峰值期 4 月的 1/25）。当前账号 9 月新建的两条 campaign（20260915 新 feed、20260812 MCM清库）表现均偏弱，与季节性低谷吻合。秋促期间不宜按旺季逻辑加预算。",
+    "with_task2_competitor": "竞品 FlexiSpot / UPLIFT 主力在 Meta 侧（FlexiSpot 在 Google 透明度中心 0 条广告）。自有数据也显示 Meta 侧 HUANUO 主账号当前无在投广告 → 存在渠道空位，但需先确认是主动策略还是遗漏。"
+  }
+}

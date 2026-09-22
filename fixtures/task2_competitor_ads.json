@@ -1,0 +1,71 @@
+{
+  "task": "T2_competitor_ads",
+  "collected_at": "2026-09-22",
+  "source": "Meta Ad Library (facebook-ads-library MCP, country=US) + Google Ads Transparency Center",
+  "note": "真实在投广告数据，非模型推测",
+  "platform_ids": {
+    "FlexiSpot_US": "196857516833503",
+    "UPLIFT_Desk": "1743798952544345",
+    "Fezibo": "268571177118066",
+    "Autonomous": "103128305358093",
+    "HUANUO_self": "100168622048562"
+  },
+  "flexispot_us": {
+    "ad_count_sampled": 15,
+    "creative_formats": ["IMAGE", "DCO (动态商品广告)"],
+    "messaging_patterns": [
+      "产品线聚合：'Say Hello to the E7 Family! E7 / E7 Pro / E7 Plus / E7L' —— 单一落地页承载全系列",
+      "L型桌换向卖点：'Left Or Right? You Decide! With reversible panels' —— 直接打 L 型桌的核心决策点",
+      "双电机参数轰炸：'Supports up to 355 lbs — perfect for multi-monitor setups / One-touch height adjustment / 4 memory presets / Rock-solid frame'",
+      "内容型引流（非硬卖）：'Standing Desk Cable Management: How to Hide Cables Under Your Desk'、'Why Most Ergonomic Chairs Feel Wrong for Shorter People'、'Solid Wood Bed Frames: Why They Last Longer' —— 用长尾痛点内容做冷流量",
+      "扩品类明显：床架、儿童床、人体工学椅与桌子并行投放"
+    ],
+    "observed_run_window": "2025-11 至 2026-09（多支广告连续在投 9 个月以上，说明素材打正）"
+  },
+  "uplift_desk": {
+    "ad_count_sampled": 15,
+    "creative_formats": ["DCO", "VIDEO (UGC)"],
+    "messaging_patterns": [
+      "★ FSA/HSA 支付角度：'Put your FSA or HSA funds to work. Ergonomic desks, chairs and more are eligible. Shop eligible products before your benefits reset.' —— 用健康账户余额到期制造紧迫感",
+      "★ 15 年质保：'The Clarksville Chair provides posture support with a 15-year warranty. Ships free.'",
+      "低价入口品：'Keep the desk you love, and get the ergonomics you need with the E7 Standing Desk Converter.' —— 用桌面转换器降低首单门槛",
+      "UGC 视频 21 秒：真实用户场景 + 宠物 (@upliftdesk #work #dogsofinstagram)，非产品棚拍"
+    ],
+    "observed_run_window": "2026-08 起持续在投"
+  },
+  "competitive_gaps_vs_huanuo": [
+    {
+      "gap": "承重参数被碾压",
+      "evidence": "FlexiSpot 广告主打 355 lbs；HUANUO 63\" Topaz 页面标称 176 lbs",
+      "impact": "多屏/重型设备用户会直接流失；参数党比价时处于劣势",
+      "action": "避免在素材中主动比较承重；改用稳定性叙事（100,000 次循环测试）+ 场景限定（轻量家庭办公）"
+    },
+    {
+      "gap": "质保年限差距",
+      "evidence": "UPLIFT 主打 15-year warranty；HUANUO 为 Up to 5 years",
+      "impact": "高客单决策（$1,099）下质保是信任锚点",
+      "action": "若无法提质保，改用 '5 年质保 + 美国本地发货 + 本地售后' 组合叙事对冲"
+    },
+    {
+      "gap": "FSA/HSA 支付角度完全空缺",
+      "evidence": "UPLIFT 在投广告明确用 FSA/HSA 到期做 CTA；HUANUO 落地页与广告均未出现",
+      "impact": "这是竞品已验证的转化杠杆，且是低竞争空位（FlexiSpot 也没用）",
+      "action": "★ 可立即复制：独立站支持 FSA/HSA 支付的前提下，加一条 'Use your FSA/HSA before it resets' 素材线"
+    },
+    {
+      "gap": "DCO 动态商品广告使用度",
+      "evidence": "FlexiSpot / UPLIFT 大量素材标记为 DCO；HUANUO 待核查",
+      "impact": "DCO 能自动组合素材，降低素材生产成本",
+      "action": "核查 HUANUO 当前是否跑 DCO"
+    }
+  ],
+  "transferable_patterns": [
+    "长尾痛点内容引流（Cable Management / 身高适配 / 空气质量）—— 低成本冷启动素材方向",
+    "L 型桌换向（Left or Right）是品类真实决策点，值得做专门的对比素材",
+    "UGC 真实场景视频 > 棚拍产品视频（UPLIFT 在用）",
+    "低价入口品（桌面板转换器）降低首单门槛，可为 LTV 铺路"
+  ],
+  "google_ads_transparency": {
+    "flexispot.com": { "advertiser_id": "AR11275194668544950273", "total_ads": 0, "note": "US 区无在投 Google 广告 → 竞品主力渠道确认为 Meta，Google 侧竞争压力小" }
+  }
+}

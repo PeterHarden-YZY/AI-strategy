@@ -1,0 +1,10 @@
+{
+  "name": "competitor_ads_task",
+  "agent": "agent_2",
+  "context": ["product_analysis_task"],
+  "v2_prefix": "【C2 · 竞品广告素材】本轮 task_profile={task_profile}。\n【§4.6 开关】task_profile=promo 时必须加「竞品同节点促销广告」过滤，并额外输出 promo_creative[]；task_profile=hybrid 时常规素材与促销素材都采集。\n【工具】facebook-ads-library：get_meta_platform_id → get_meta_ads；gads-transparency：search_advertiser → get_advertiser_ads。\n【§6 隔离规则】你只接收 C0，看不到 C1 的痛点结果。\n【静默失败警戒】工具返回 0 条时，必须区分「未投该渠道」与「ID 用错」，如实记 GAP，不得当成「竞品没投广告」。\n\n——以下为迁移自旧项目 crew.jsonc task[2] 的原文提示词，一字未改——\n",
+  "description": "结合我们产品的品类与卖点信息，搜索 {product_name} 领域内销量前三的竞品，分析他们的广告、落地页、社媒呈现卖点，推测他们的主要获客渠道。",
+  "expected_output": "竞品营销拆解报告，包含卖点对比和渠道推测。",
+  "v2_suffix": "\n【v2 落地要求】最终以 JSON 落盘：ads[] 每条含 brand / platform / creative_type / headline / body / cta / start_date / format；promo_creative[]（仅 promo/hybrid 必填）；并分离 facts / inferences / gaps、记录 sources[]（tool/server/query/retrieved_at）。只做提取，不做评价。",
+  "output_file": "task2_competitor_ads.json"
+}

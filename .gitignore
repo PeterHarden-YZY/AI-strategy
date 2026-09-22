@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+scratch/
+!scratch/.gitkeep
+output/*
+!output/.gitkeep
+.crewai/
+db/
+.playwright-mcp/
+*_out.txt
+*_err.txt

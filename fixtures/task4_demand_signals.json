@@ -1,0 +1,45 @@
+{
+  "task": "T4_demand_signals",
+  "collected_at": "2026-09-22",
+  "source": "Google Trends MCP (geo=US, timeframe=today 12-m)",
+  "note": "真实搜索兴趣数据，归一化 0-100",
+  "average_interest_12m": {
+    "electric standing desk": 17,
+    "l shaped standing desk": 2,
+    "standing desk with drawers": 2,
+    "standing desk with storage": 2
+  },
+  "key_finding_1_head_term_dominates": {
+    "observation": "'electric standing desk' 均值 17，是 'l shaped standing desk' / 'with drawers' / 'with storage' (均 2) 的 8 倍以上",
+    "implication": "L 型、带抽屉、带储物这些细分属性词的自然搜索量极小。把它们作为主投关键词会面临量不足；更适合作为长尾/精准匹配补充，主力预算应压在 head term。",
+    "caveat": "Trends 是相对兴趣指数，非绝对搜索量；实际关键词量需用 Keyword Planner 二次验证"
+  },
+  "key_finding_2_seasonality": {
+    "peak_window": "3月下旬 – 5月中旬",
+    "peak_value": 100,
+    "peak_date": "2026-04-12 ~ 04-18",
+    "ramp": [
+      "2026-03-22~03-28: 28",
+      "2026-03-29~04-04: 57",
+      "2026-04-05~04-11: 82",
+      "2026-04-12~04-18: 100 (峰值)",
+      "2026-04-19~04-25: 68",
+      "2026-04-26~05-02: 51",
+      "2026-05-03~05-09: 59",
+      "2026-05-10~05-16: 66",
+      "2026-05-17~05-23: 47"
+    ],
+    "trough": "6月下旬起回落，7月–次年3月中旬长期维持在 1-11 的低位",
+    "current_period_sep_2026": "4 (谷底区间)"
+  },
+  "key_finding_3_synchronised_lift": {
+    "observation": "4月峰值期所有细分词同步抬升（l shaped 1→6, drawers 1→6, storage 1→11, electric 3→100）",
+    "implication": "这是品类整体季节性，不是单个词的波动。旺季时细分词也值得加投；淡季时连 head term 都没量。"
+  },
+  "action_implications": [
+    "★ 当前 9 月正处于全年搜索兴趣谷底（值 4，峰值期的 1/25）。秋促在这个窗口跑，需要更大的折扣力度或更强的 urgency 才能撬动；单纯加预算的边际效益差。",
+    "★ 明年 3 月下旬就该开始 ramp up 素材与预算，4 月中旬是峰值。现在（9月）应该做的是为明年旺季准备素材库，而不是指望秋促爆量。",
+    "FSA/HSA 角度（见 task2）与季节性可能有耦合：FSA 部分计划 3 月/年底到期，值得验证是否是 4 月峰值的驱动因素之一。",
+    "季节性数据来自 Google 搜索；Meta 侧投放的季节性可能不同，需用自有投放数据交叉验证。"
+  ]
+}

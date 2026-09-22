@@ -1,0 +1,6 @@
+{
+  "name": "router_task",
+  "agent": "agent_r0",
+  "description": "【R0 · 广告类型路由 + 输入槽解析（§4.1 / §4.2）】\n你是路由层，唯一职责是把用户输入翻译成结构化契约。\n\n【确定性预处理已给出的槽位骨架】\n---BEGIN PRE-ROUTE---\n{route_skeleton}\n---END PRE-ROUTE---\n\n【你的任务】\n1. 沿用骨架中的 `ad_type` 与 `slot.mode`，**不得修改**判定结果（判定由零 LLM 的确定性层完成）。\n2. 补完 `slots.product.resolved` 与 `slots.promo.resolved`：\n   - `mode=url`：用 playwright 打开 `urls[]` 里的真实页面，从页面原文取值。product 取 brand / product_name / category / price / selling_points；promo 取 promo_name / mechanic / discount_value / threshold / code / start_date / end_date / eligible_scope / exclusions。\n   - `mode=manual`：只从用户原文里**逐字**取值，用户没写的字段一律留空。\n   - `mode=none`：resolved 全空，pending_confirm 列出全部必填字段。\n3. 把拿不到的字段写进该槽的 `pending_confirm[]`。\n4. `sources[]` 记录每次工具调用：tool / server / query / retrieved_at。\n\n【铁律】\n- **严禁编造**：价格、型号、认证、尺寸、折扣数字，页面上没有就是没有，留空进 pending_confirm。\n- **活动数字零容错**：折扣力度、满减门槛、优惠码、起止日期不得估算、不得取整、不得写成「约 X 折」。拿不到就留空，下游会自动占位成 {{折扣力度待确认}} 这类占位符。\n- **禁止输出策略建议、卖点判断、预算数字**（§4.7，违反即串层）。\n- **澄清只允许单批次**：不要新增追问轮次，缺失字段全部进 pending_confirm。",
+  "expected_output": "严格符合 scratch/router.json 契约的 JSON：含 status / ad_type / task_profile / decision_note / created_at / slots.{{product,promo}}.{{mode,urls,raw_text,resolved,pending_confirm}} / missing_slots / clarifications / sources。ad_type 必须 ∈ {{product, promo, hybrid}}。"
+}

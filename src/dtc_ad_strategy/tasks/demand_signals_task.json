@@ -1,0 +1,7 @@
+{
+  "name": "demand_signals_task",
+  "agent": "agent_3",
+  "context": ["product_analysis_task"],
+  "description": "【C4 · 需求信号与搜索词（§6 / §4.6）】本轮 task_profile={task_profile}。\n工具：google-trends（compare_terms / interest_over_time）、similarweb、google-ads 搜索词报告。\n\n【必答项】\n1. 每个主词与对比词的季节性：**峰值周与谷底周**（用 ISO 周或日期区间表示），以及相对主词的量级倍数。\n2. trends[] 每条给出 values[]（时间序列）、peak_week、trough_week、seasonality_note。\n3. keywords[]：搜索词及其量级、意图归类。\n\n【§4.6 开关】\n- product：产品词为主。\n- promo：活动词（brand+code / brand+sale / 节日词）为主，且**季节性峰值必答**。\n- hybrid：合并两类词。\n\n【静默失败警戒】GAQL 与 similarweb 参数写错会返回空而不报错。返回 0 行时必须先怀疑参数写错，核对后仍为 0 才记 GAP，并写明「已核对参数，确认为 0 行」。",
+  "expected_output": "JSON 落盘：trends[]（term / values[] / peak_week / trough_week / seasonality_note）、keywords[]；并分离 facts / inferences / gaps、记录 sources[]（tool/server/query/retrieved_at）。"
+}

@@ -1,0 +1,41 @@
+{
+  "task": "T0_product_analysis",
+  "input_mode": "A",
+  "source": "https://www.huanuo.com/products/63-premium-topaz-l-shaped-standing-desk",
+  "collected_at": "2026-09-22",
+  "collected_by": "WebFetch (real data)",
+  "product": {
+    "brand": "HUANUO",
+    "name": "63\" Premium Topaz Standing Desk",
+    "collection": "Premium Collection",
+    "price": { "sale": "$1,099.99", "regular": "$1,379.99", "discount": "~20% off" },
+    "active_promotion": "Autumn Sale (link: /pages/huanuo-autumn-sale)",
+    "cta": "Shop To Sale",
+    "category": "Electric height-adjustable standing desk (executive / storage-integrated)",
+    "positioning": "Premium 家居办公一体化工作站：储物整合 + 设计感（藤编/波浪纹理）+ 隐私挡板"
+  },
+  "selling_points": [
+    "Integrated storage: 2 drawers + 1 file cabinet (A4 & Letter dual-rail) + multi-size storage cubby",
+    "1.18\" thick desktop board — thick/durable",
+    "Reinforced steel frame + aerospace-grade lift column connectors, tested 100,000+ cycles",
+    "Electric height adjust 28.35\"–47.1\" with quiet motor, LED display, 4 memory presets",
+    "Front privacy panel blocks side view up to 90%",
+    "Secondary desktop with AC/USB outlets (printer/speaker placement)",
+    "4 colors × 2 surface styles (handwoven rattan / wavy fluted texture)",
+    "Up to 5-year warranty, ships from USA"
+  ],
+  "specs": {
+    "height_range": "28.35\" – 47.1\"",
+    "max_load": "176 lbs",
+    "lifting_speed": "20 mm/s",
+    "tabletop_thickness": "1.18\"",
+    "material": "Particle Board + Carbon Steel + Plastic",
+    "memory_presets": 4,
+    "warranty": "Up to 5 years"
+  },
+  "data_quality_notes": [
+    "⚠️ 页面 URL slug 是 'l-shaped-standing-desk'，但正文多处写 'I shaped executive standing desk'，标题也无 L-shaped 字样。疑为页面改版/SKU 合并遗留，SEO 与广告落地页一致性存在风险，需人工确认。",
+    "⚠️ 高度范围出现两个口径：28.35\"–47.1\"（Product Details）与 28.9\"x47.1\"、46.46\"（正文）。广告素材引用前需统一。",
+    "ℹ️ 未获取到：竞品对比参数、认证信息（BIFMA 等）、包装尺寸、库存状态。"
+  ]
+}

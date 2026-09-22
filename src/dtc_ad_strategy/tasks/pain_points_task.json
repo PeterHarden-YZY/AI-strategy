@@ -1,0 +1,10 @@
+{
+  "name": "pain_points_task",
+  "agent": "agent_1",
+  "context": ["product_analysis_task"],
+  "v2_prefix": "【C1 · 用户评论与痛点】本轮 task_profile={task_profile}。\n【§4.6 开关】task_profile=promo 时改跑「折扣敏感度 / 购买动机」，同样必须带证据，不得跳过；task_profile=hybrid 时痛点与折扣动机都跑。\n【§6 隔离规则】你只接收 C0，看不到 C2 的竞品结果，也不要去推测竞品。\n【发现入口】先用搜索类工具（tavily，未接入则记 GAP）发现 Reddit / Amazon / Trustpilot / YouTube 的具体讨论 URL，再用 playwright 抓正文；抓不到就记 GAP，不要脑补。\n\n——以下为迁移自旧项目 crew.jsonc task[1] 的原文提示词，一字未改——\n",
+  "description": "结合我们产品的品类与参数信息，搜索全网关于 {product_name} 的用户评价（评价来自 Trustpilot, Amazon, YouTube, Reddit），对用户评价做语义分析，提取出前四个核心用户痛点及真实场景。\n【证据要求】每条痛点必须标注来源：平台 + 品牌/产品 + 时间。\n【模式B注意】若 {product_name} 是具体品牌型号且产品尚未发布，市面上不存在本产品的真实评价，严禁虚构；直接沿用同品类公开评价即可（以品类词搜索时本就如此）。",
+  "expected_output": "一段 Markdown 格式的用户痛点分析报告，列出痛点及对应的真实场景。",
+  "v2_suffix": "\n【v2 落地要求】最终以 JSON 落盘：pain_points[] 每条含 id（pp_01…）/ text / evidence{{platform, brand, date, url}} / severity / quote（原文摘录）；并分离 facts / inferences / gaps、记录 sources[]。没有检索到任何讨论时，如实记 GAP 并说明原因（无搜索入口 / 反爬被拦 / 关键词无结果），不得编造评价。",
+  "output_file": "task1_painpoints.json"
+}

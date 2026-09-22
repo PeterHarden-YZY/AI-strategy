@@ -1,0 +1,10 @@
+{
+  "name": "product_analysis_task",
+  "agent": "agent_1",
+  "context": [],
+  "v2_prefix": "【C0 · 产品剖析】本轮 ad_type={ad_type}，task_profile={task_profile}。输入来源改为 router.json.slots.product（不再用命令行直接塞 URL）。\n【降级规则 §4.6】当 task_profile=promo 时，只解最小集（名称 / 价格 / 品类），范围以 router.json.slots.promo.resolved.eligible_scope 为准；无产品 URL 时从活动页抽取并标 source。\n【模式映射】slots.product.mode=url → 模式A；mode=manual → 模式B（以 raw_text 为简报）。\n\n——以下为迁移自旧项目 crew.jsonc task[0] 的原文提示词，一字未改——\n",
+  "description": "【产品剖析 · 双模式输入，必须二选一执行】\n模式A（已发布产品）：若提供了产品落地页 URL（{product_url}），则抓取并深入剖析该页面内容。\n模式B（未发布产品）：若提供了人工输入的产品简报，则以该简报为唯一事实来源进行结构化提炼。简报内容如下：\n---BEGIN BRIEF---\n{product_brief}\n---END BRIEF---\n两种模式均需输出：1. 细分品类与市场定位 2. 核心卖点与亮点功能 3. 详细技术参数、材质与规格指标。\n模式B铁律：严禁编造简报中不存在的数据（不得用模型先验补全型号、价格、认证、尺寸等）；缺失参数一律标注【待确认】；报告末尾需附「建议补充信息清单」，列出下游痛点分析与竞品拆解最需要但缺失的信息。",
+  "expected_output": "产品基础信息提炼报告（Markdown格式），清晰列出：数据来源与输入模式（A: URL抓取 / B: 人工简报）、品类定位、核心卖点清单、详细技术参数规格，以及模式B下的【待确认】项与建议补充信息清单。",
+  "v2_suffix": "\n【v2 落地要求】除上述 Markdown 外，最终必须以 JSON 输出并落盘，含：input_mode（url/brief/url+brief）、category、selling_points[]、specs{{}}、pending_confirm[]、suggested_supplements[]、facts/inferences/gaps 三层、sources[]（tool/server/query/retrieved_at）。",
+  "output_file": "task0_product.json"
+}

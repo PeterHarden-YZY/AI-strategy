@@ -1,0 +1,7 @@
+{
+  "name": "landing_pages_task",
+  "agent": "agent_2",
+  "context": ["product_analysis_task", "competitor_ads_task"],
+  "description": "【C3 · 竞品落地页与 CTA（§6 / §4.6）】本轮 task_profile={task_profile}。\n用 playwright 抓取竞品落地页，提取 hero 标题、活动规则、CTA 原文、价格锚点。\n\n【§4.6 开关】\n- product：以竞品 PDP 为主。\n- promo：以活动页 / 促销规则页为主，必须提出 promo_rules[]、end_date、threshold、exclusions[]。\n- hybrid：双侧采集，且必须交叉校验 PDP 与活动页的价格 / 折扣口径是否一致，不一致要显式写出差异。\n\n【纪律】\n- CTA 必须逐字摘录，不得翻译、不得润色——下游素材的 CTA 要与它逐字一致。\n- 抓不到的页面记 GAP 并写明原因（反爬 / 404 / 需要登录），不得脑补内容。\n- 价格锚点只记录页面上真实出现的数字与写法（原价 / 现价 / 划线价）。",
+  "expected_output": "JSON 落盘：pages[] 每条含 brand / url / hero_headline / promo_rules[] / cta_text[] / price_anchoring；并分离 facts / inferences / gaps、记录 sources[]（tool/server/query/retrieved_at）。"
+}

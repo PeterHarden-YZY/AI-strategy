@@ -1,0 +1,7 @@
+{
+  "name": "creative_brief_md_task",
+  "agent": "agent_5",
+  "context": ["creative_task"],
+  "description": "【S1b · 渲染素材 Brief 交付文件】\n把上一步 task7_creative.json 里的 briefs[] 渲染成 output/creative_brief.md。\n\n【格式要求】\n- 文件开头写一行总览：本轮 ad_type / objective / 福格主导路径 / 素材条数。\n- 每条 Brief **独立成段、可单独派工**，用 `## asset_id` 作为二级标题，按 §10.4 的字段顺序逐项列出（asset_id / placement / format / objective / ad_type / target_audience / strategy / fogg / copy / visual_direction / delivery_spec / reference_prompts / acceptance_checklist）。\n- 缺失字段写「待确认」占位，不得省略字段。\n- `reference_prompts` 段落必须显式标注「仅作氛围参考图，非终稿，不可直接投放」。\n- ad_type 为 promo/hybrid 时，在每条 Brief 末尾复述该条用到的活动口径（折扣 / 门槛 / 优惠码 / 截止日期），供验收逐字核对。",
+  "expected_output": "output/creative_brief.md：≥6 条 Brief，每条含完整福格三要素、镜号表、CTA 原文、交付规格、验收清单；不依赖上下文即可读懂。"
+}

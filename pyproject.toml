@@ -1,0 +1,29 @@
+[project]
+name = "dtc-ad-strategy-v2"
+version = "0.1.0"
+description = "DTC 广告策略引擎 · MVP v1.2（路由层 + MCP 驱动采集 + 多 Crew 推理）"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]>=1.15.5,<2.0.0",
+    "crewai-tools[mcp]>=0.4.0",
+    "pydantic>=2.7,<3",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+web = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src/dtc_ad_strategy", "knowledge", "fixtures"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

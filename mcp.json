@@ -1,0 +1,79 @@
+{
+  "//": "项目级 MCP 配置（§3）。凭证一律走 ${ENV}，真值写在项目根 .env（已 gitignore）。未解析成功的条目会自动回退到用户级 ~/.codebuddy/mcp.json。注意：本文件与 .codebuddy/mcp.json 内容一致，二选一即可。",
+  "mcpServers": {
+    "google-ads": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:/Users/yangziyang/.workbuddy/mcp_servers/google-ads-mcp",
+        "run",
+        "python",
+        "-m",
+        "ads_mcp.server"
+      ],
+      "env": {
+        "GOOGLE_ADS_CONFIG_PATH": "${GOOGLE_ADS_CONFIG_PATH}"
+      },
+      "disabled": false
+    },
+    "google-trends": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/yangziyang/.workbuddy/mcp_servers/google-trends-mcp/dist/index.js"
+      ],
+      "disabled": false
+    },
+    "gads-transparency": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/yangziyang/.workbuddy/mcp_servers/gads-transparency-mcp/dist/index.js"
+      ],
+      "disabled": false
+    },
+    "facebook-ads-library": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/yangziyang/.workbuddy/mcp_servers/facebook-ads-library-mcp/index.js"
+      ],
+      "env": {
+        "PYTHON_PATH": "${PYTHON_PATH}",
+        "SCRAPECREATORS_API_KEY": "${SCRAPECREATORS_API_KEY}"
+      },
+      "disabled": false
+    },
+    "meta-ads": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:/Users/yangziyang/.workbuddy/mcp_servers/meta-ads-mcp/dist/index.js"
+      ],
+      "env": {
+        "META_ACCESS_TOKEN": "${META_ACCESS_TOKEN}"
+      },
+      "disabled": false
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser=msedge",
+        "--viewport-size=1440x900"
+      ],
+      "disabled": false
+    },
+    "similarweb": {
+      "type": "http",
+      "url": "https://mcp.similarweb.com",
+      "headers": {
+        "api-key": "${SIMILARWEB_API_KEY}"
+      },
+      "disabled": false
+    }
+  }
+}

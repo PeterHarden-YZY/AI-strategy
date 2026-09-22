@@ -1,0 +1,7 @@
+{
+  "name": "performance_task",
+  "agent": "agent_3",
+  "context": ["product_analysis_task"],
+  "description": "【C5 · 自有历史投放复盘（§6 / §4.6）】本轮 task_profile={task_profile}。\n工具：google-ads（customers_list_accessible_customers → search_search）、meta-ads。\n\n【必答项】\n1. 按 campaign 拉 spend / CPA / ROAS / CPC / CVR / conversions，标出效率最优与最差各一条。\n2. account_totals{} 给出账户级汇总。\n\n【§4.6 开关】\n- promo：**必须拉历史同期活动 campaign 的 ROAS / CPA 作为基线**，写进 promo_baseline[]。\n- hybrid：全量 + 同期活动基线。\n\n【§4.3】本 task 负责回填 objective.json 的 guardrails：cpa_ceiling（取自历史最优 CPA 的一定倍数）、non_brand_cpc_cap、frequency_cap。拿不到就记 GAP，不得臆造。\n\n【静默失败警戒】GAQL 字段名写错返回空而不报错。0 行时必须先核对参数再记 GAP。",
+  "expected_output": "JSON 落盘：campaigns[]（name / spend / cpa / roas / cpc / cvr / conversions）、account_totals{{}}、promo_baseline[]（仅 promo/hybrid）；并分离 facts / inferences / gaps、记录 sources[]（tool/server/query/retrieved_at）。"
+}
