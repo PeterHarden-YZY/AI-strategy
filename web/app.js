@@ -169,11 +169,14 @@ const State = {
   reportTab: "strategy_report.md",
   preRoute: null,
   polling: null,
+  logFilter: "all",
+  logSearch: "",
 };
 
 function loadForm() {
   const def = {
     product_url: "", product_text: "", promo_url: "", promo_text: "", goal_text: "",
+    market: "US",
     stage: "full", offline: false, skip_collection: false,
     collection_steps: [], strategy_steps: [],
   };
@@ -401,11 +404,46 @@ function viewRun() {
 
   const left = h("div", { class: "card" }, h("div", { class: "card-title" }, "输入"));
 
+  // 预设立方块 (Quick Preset Load)
+  const presets = State.meta?.presets || [];
+  if (presets.length) {
+    const bar = h("div", { class: "preset-bar" },
+      h("div", { class: "preset-title" },
+        h("span", { html: I.play, style: "color:var(--accent-2)" }),
+        "测试预设样本："
+      ),
+      ...presets.map((p) => h("button", {
+        type: "button",
+        class: "preset-chip",
+        title: p.desc,
+        onclick: () => {
+          Object.assign(f, p.params);
+          saveForm();
+          viewRun();
+          schedulePreRoute();
+          toast(`已填入预设：${p.title}`, "ok");
+        }
+      },
+        h("span", { class: `preset-tag ${p.tag}` }, p.tag),
+        p.title
+      ))
+    );
+    left.append(bar);
+  }
+
   const mkField = (key, label, placeholder, hint, textarea, mono) => {
     const input = textarea
       ? h("textarea", { class: `textarea ${mono ? "mono" : ""}`, placeholder, oninput: (e) => { f[key] = e.target.value; saveForm(); schedulePreRoute(); } }, f[key] || "")
       : h("input", { class: `input ${mono ? "mono" : ""}`, placeholder: placeholder, value: f[key] || "", oninput: (e) => { f[key] = e.target.value; saveForm(); schedulePreRoute(); } });
     return h("div", { class: "field" }, h("label", {}, label), input, hint ? h("div", { class: "hint" }, hint) : null);
+  };
+
+  const mkSelect = (key, label, options, hint) => {
+    const sel = h("select", {
+      class: "select",
+      onchange: (e) => { f[key] = e.target.value; saveForm(); schedulePreRoute(); }
+    }, ...options.map(opt => h("option", { value: opt.val, selected: f[key] === opt.val ? "" : null }, opt.label)));
+    return h("div", { class: "field" }, h("label", {}, label), sel, hint ? h("div", { class: "hint" }, hint) : null);
   };
 
   left.append(
@@ -415,6 +453,13 @@ function viewRun() {
     mkField("promo_url", "活动页 / EDM URL", "https://www.example.com/promo/black-friday", "promo 槽 URL 模式；与产品信息同时提供 → hybrid", false, true),
     mkField("promo_text", "活动内容（手填）", "例：黑五全场 20% OFF，code BF20，11/20–11/30", "包含折扣/限时/节日信号即被识别为 promo", true),
     h("hr", { class: "divider" }),
+    mkSelect("market", "目标市场 / 国家 (Market)", [
+      { val: "US", label: "US · 美国 (默认核心市场)" },
+      { val: "UK", label: "UK · 英国" },
+      { val: "CA", label: "CA · 加拿大" },
+      { val: "DE", label: "DE · 德国" },
+      { val: "AU", label: "AU · 澳大利亚" },
+    ], "影响竞品广告库与趋势搜索的地域维度"),
     mkField("goal_text", "投放目的（口语描述）", "例：想多卖货 / 加购 / 收线索 / 打声量", "R1 会把口语映射到 objective 枚举（leads/reach/outbound_clicks/conversions_purchase/add_to_cart）", true)
   );
 
@@ -558,11 +603,12 @@ async function renderPreRoute() {
       body: {
         product_url: f.product_url, product_text: f.product_text,
         promo_url: f.promo_url, promo_text: f.promo_text, goal_text: f.goal_text,
+        market: f.market || "US",
       },
     });
     State.preRoute = r;
     box.innerHTML = "";
-    box.append(
+    const els = [
       h("div", { class: "adtype-hero" },
         h("span", { class: `adtype-badge ${r.ad_type}` }, r.ad_type.toUpperCase()),
         h("div", { style: "flex:1;min-width:0" },
@@ -575,16 +621,37 @@ async function renderPreRoute() {
         slotBox("product 槽", r.slots?.product),
         slotBox("promo 槽", r.slots?.promo)
       ),
-      r.missing_slots?.length ? h("div", { class: "clar-item", style: "margin-top:10px" }, h("span", { class: "clar-q" }, "MISSING"), `缺失槽位：${r.missing_slots.join("、")}`) : null,
-      r.clarifications?.length
-        ? h("div", {},
-            h("div", { class: "card-title", style: "margin:14px 0 0" }, `澄清清单（${r.clarifications.length}）`),
-            h("div", { class: "clar-list" },
-              ...r.clarifications.map((c) => h("div", { class: "clar-item" }, h("span", { class: "clar-q" }, "?"), h("span", {}, `[${c.slot}.${c.field}] `, c.question)))
-            )
-          )
-        : null
-    );
+    ];
+    if (r.missing_slots?.length) {
+      els.push(h("div", { class: "clar-item", style: "margin-top:10px" }, h("span", { class: "clar-q" }, "MISSING"), `缺失槽位：${r.missing_slots.join("、")}`));
+    }
+    if (r.clarifications?.length) {
+      const clarList = h("div", { class: "clar-list" });
+      for (const c of r.clarifications) {
+        clarList.append(
+          h("div", {
+            class: "clar-item interactive",
+            title: "点击在输入框中聚焦补充该信息",
+            onclick: () => {
+              const target = c.slot === "promo" ? $("textarea[placeholder*='黑五']") : $("textarea[placeholder*='HUANUO']");
+              if (target) {
+                target.focus();
+                target.scrollIntoView({ behavior: "smooth", block: "center" });
+                target.style.boxShadow = "0 0 0 3px var(--warn)";
+                setTimeout(() => { target.style.boxShadow = ""; }, 1200);
+              }
+            }
+          }, h("span", { class: "clar-q" }, "?"), h("span", {}, `[${c.slot}.${c.field}] `, c.question))
+        );
+      }
+      els.push(h("div", {},
+        h("div", { class: "card-title", style: "margin:14px 0 0" }, `澄清清单（${r.clarifications.length}）`),
+        clarList
+      ));
+    }
+    for (const el of els) {
+      if (el) box.append(el);
+    }
   } catch (e) {
     box.innerHTML = "";
     box.append(h("div", { class: "item-card", style: "border-color:rgba(248,113,113,.3)" }, `预路由失败：${esc(e.message)}`));
@@ -620,6 +687,7 @@ async function submitJob() {
         params: {
           product_url: f.product_url, product_text: f.product_text,
           promo_url: f.promo_url, promo_text: f.promo_text, goal_text: f.goal_text,
+          market: f.market || "US",
         },
         options: opts,
       },
@@ -714,16 +782,53 @@ async function renderJobDetail() {
           h("span", { class: "ps-icon" }, p.status === "done" ? "✓" : p.status === "failed" ? "✕" : p.status === "running" ? "●" : p.status === "skipped" ? "–" : String(j.phases.indexOf(p) + 1)),
           h("span", { class: "ps-label" }, p.label)
         ))
-      )
+      ),
+      j.status === "done"
+        ? h("div", { style: "display:flex;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap" },
+            h("button", { class: "btn btn-primary btn-sm", onclick: () => go("report", { reportTab: "strategy_report.md" }) }, h("span", { html: I.doc }), "查看策略报告 (S2)"),
+            h("button", { class: "btn btn-sm", onclick: () => go("report", { reportTab: "creative_brief.md" }) }, h("span", { html: I.report }), "查看素材 Brief (S1b)"),
+            h("button", { class: "btn btn-sm", onclick: () => go("data", { dataFile: "task6_strategy.json" }) }, h("span", { html: I.data }), "查看策略契约 (S0)")
+          )
+        : null
     );
     main.append(head);
+
+    const logToolbar = h("div", { class: "log-toolbar" },
+      h("div", { class: "log-filters" },
+        ...[
+          { id: "all", label: "全部" },
+          { id: "phase", label: "阶段 (Phase)" },
+          { id: "warn_err", label: "警告与错误" },
+          { id: "info", label: "常规日志" },
+        ].map((btn) => h("button", {
+          class: `log-btn ${State.logFilter === btn.id ? "active" : ""}`,
+          onclick: (e) => {
+            $$(".log-btn").forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            State.logFilter = btn.id;
+            reFilterLogs();
+          }
+        }, btn.label))
+      ),
+      h("div", { style: "display:flex;gap:8px;align-items:center" },
+        h("div", { class: "log-search-box" },
+          h("input", {
+            class: "log-search-input",
+            placeholder: "过滤关键词…",
+            value: State.logSearch,
+            oninput: (e) => { State.logSearch = e.target.value.toLowerCase(); reFilterLogs(); }
+          })
+        ),
+        h("button", { class: "btn btn-ghost btn-sm", onclick: () => { const c = $("#log-console"); if (c) c.scrollTop = c.scrollHeight; } }, "滚到底部")
+      )
+    );
 
     main.append(
       h("div", { class: "card", style: "padding:16px" },
         h("div", { style: "display:flex;align-items:center;justify-content:space-between;margin-bottom:10px" },
-          h("div", { class: "card-title", style: "margin:0" }, `实时日志（${j.log_total}）`),
-          h("button", { class: "btn btn-ghost btn-sm", onclick: () => { const c = $("#log-console"); if (c) c.scrollTop = c.scrollHeight; } }, "滚到底部")
+          h("div", { class: "card-title", style: "margin:0" }, `实时日志（${j.log_total}）`)
         ),
+        logToolbar,
         h("div", { class: "log-console", id: "log-console" })
       )
     );
@@ -734,6 +839,7 @@ async function renderJobDetail() {
         h("div", { class: "json-view", style: "max-height:340px", html: highlightJson(j.result) })
       ));
     }
+    j._allLogs = [];
     appendLogs(j.logs || []);
   } catch (e) {
     main.innerHTML = "";
@@ -741,11 +847,37 @@ async function renderJobDetail() {
   }
 }
 
+function logMatches(l) {
+  if (State.logFilter === "phase" && l.kind !== "phase") return false;
+  if (State.logFilter === "warn_err" && l.kind !== "warn" && l.kind !== "error") return false;
+  if (State.logFilter === "info" && l.kind !== "info") return false;
+  if (State.logSearch && !l.text.toLowerCase().includes(State.logSearch)) return false;
+  return true;
+}
+
+function reFilterLogs() {
+  const con = $("#log-console");
+  if (!con || !State.jobDetail) return;
+  con.innerHTML = "";
+  const logs = State.jobDetail._allLogs || [];
+  for (const l of logs) {
+    if (logMatches(l)) {
+      con.append(h("div", { class: `log-line ${l.kind}` }, h("span", { class: "log-t" }, l.t), h("span", { class: "log-x" }, l.text)));
+    }
+  }
+  con.scrollTop = con.scrollHeight;
+}
+
 function appendLogs(logs) {
+  if (!State.jobDetail) return;
+  if (!State.jobDetail._allLogs) State.jobDetail._allLogs = [];
+  State.jobDetail._allLogs.push(...logs);
   const con = $("#log-console");
   if (!con) return;
   for (const l of logs) {
-    con.append(h("div", { class: `log-line ${l.kind}` }, h("span", { class: "log-t" }, l.t), h("span", { class: "log-x" }, l.text)));
+    if (logMatches(l)) {
+      con.append(h("div", { class: `log-line ${l.kind}` }, h("span", { class: "log-t" }, l.t), h("span", { class: "log-x" }, l.text)));
+    }
   }
   const nearBottom = con.scrollHeight - con.scrollTop - con.clientHeight < 120;
   if (nearBottom || logs.length < 5) con.scrollTop = con.scrollHeight;
@@ -892,6 +1024,46 @@ function emptyData(meta) {
   );
 }
 
+function openJsonEditor(res) {
+  const mask = h("div", { class: "modal-mask" });
+  const textarea = h("textarea", { class: "editor-textarea", spellcheck: "false" }, res.raw || JSON.stringify(res.data, null, 2));
+  const errorEl = h("div", { style: "color:var(--err);font-size:12px;margin-bottom:8px;display:none" });
+
+  const save = async () => {
+    try {
+      JSON.parse(textarea.value);
+      await api(`/api/scratch/${res.name}`, {
+        method: "PUT",
+        body: { raw: textarea.value },
+      });
+      toast(`已保存修改到 ${res.name}`, "ok");
+      mask.remove();
+      refreshAll(true).then(() => { renderDataSide(); renderDataDetail(); });
+    } catch (e) {
+      errorEl.style.display = "block";
+      errorEl.textContent = `JSON 格式校验失败：${e.message}`;
+    }
+  };
+
+  const modal = h("div", { class: "editor-modal" },
+    h("div", { style: "display:flex;justify-content:space-between;align-items:center" },
+      h("div", {},
+        h("h3", { style: "margin:0;display:flex;align-items:center;gap:8px" }, h("span", { html: I.doc }), `编辑数据契约 · ${res.name}`),
+        h("div", { style: "font-size:12px;color:var(--text-3);margin-top:4px" }, "微调后点击保存，下游流水线（如策略合成）将直接基于该新契约执行")
+      ),
+      h("button", { class: "btn btn-ghost btn-sm", onclick: () => mask.remove() }, "✕")
+    ),
+    textarea,
+    errorEl,
+    h("div", { style: "display:flex;justify-content:flex-end;gap:10px" },
+      h("button", { class: "btn", onclick: () => mask.remove() }, "取消"),
+      h("button", { class: "btn btn-primary", onclick: save }, "保存契约修改")
+    )
+  );
+  mask.append(modal);
+  $("#modal-root").append(mask);
+}
+
 function renderDataFile(main, res, meta) {
   const d = res.data || {};
   const counts = {
@@ -908,6 +1080,7 @@ function renderDataFile(main, res, meta) {
         h("div", { class: "dh-meta" }, `${meta?.label || ""} · ${meta?.desc || ""} · 更新于 ${fmtTime(res.mtime)} · ${fmtBytes(res.size)}`)
       ),
       h("div", { class: "dh-actions" },
+        h("button", { class: "btn btn-sm", onclick: () => openJsonEditor(res) }, h("span", { html: I.doc }), "编辑契约"),
         h("button", { class: "btn btn-sm", onclick: () => copyText(res.raw, "JSON 已复制") }, h("span", { html: I.copy }), "复制"),
         h("button", {
           class: "btn btn-danger btn-sm",
@@ -1093,23 +1266,86 @@ function renderPayload(name, d) {
   }
 
   if (name === "task4_demand_signals.json") {
-    if (d.trends?.length) {
+    // 1. Google Trends 趋势图表
+    const trendItems = d.trends?.length ? d.trends : (d.key_finding_2_seasonality?.ramp ? [{
+      term: "electric standing desk (季节性升温走势)",
+      values: d.key_finding_2_seasonality.ramp,
+      seasonality_note: `${d.key_finding_2_seasonality.peak_window || "3-5月"} 峰值 ${d.key_finding_2_seasonality.peak_value || 100} (${d.key_finding_2_seasonality.peak_date || ""}) · ${d.key_finding_2_seasonality.trough || ""}`
+    }] : []);
+
+    if (trendItems.length) {
       add(h("div", { class: "section-block" },
-        h("div", { class: "sb-title" }, `趋势（${d.trends.length}）`),
-        ...d.trends.map((t) => h("div", { class: "item-card" },
-          h("b", { style: "color:var(--text);font-family:var(--mono)" }, t.term || "?"),
-          t.seasonality_note ? h("div", { style: "font-size:12.5px;margin-top:3px" }, t.seasonality_note) : null,
-          t.values?.length ? h("div", { class: "mini-json" }, `values: ${JSON.stringify(t.values.slice(0, 30))}…`) : null
+        h("div", { class: "sb-title" }, `搜索趋势走势（${trendItems.length}）`),
+        ...trendItems.map((t) => renderTrendCard(t))
+      ));
+    }
+
+    // 2. 12 个月平均兴趣指数对比条
+    const avgInterest = d.average_interest_12m || {};
+    const avgEntries = Object.entries(avgInterest);
+    if (avgEntries.length) {
+      const maxVal = Math.max(...avgEntries.map(([, v]) => Number(v) || 1), 1);
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, "12 个月平均搜索兴趣对比 (Google Trends 0–100)"),
+        h("div", { class: "item-card" },
+          ...avgEntries.map(([term, val]) => {
+            const pct = Math.max(4, Math.round((Number(val) / maxVal) * 100));
+            return h("div", { style: "margin-bottom:10px" },
+              h("div", { style: "display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px" },
+                h("span", { style: "font-family:var(--mono);color:var(--text);font-weight:600" }, term),
+                h("b", { style: "font-family:var(--mono);color:var(--accent-2)" }, String(val))
+              ),
+              h("div", { style: "height:8px;background:var(--panel-3);border-radius:99px;overflow:hidden;border:1px solid var(--line)" },
+                h("div", { style: `height:100%;width:${pct}%;background:linear-gradient(90deg, #6366f1, #818cf8);border-radius:99px` })
+              )
+            );
+          })
+        )
+      ));
+    }
+
+    // 3. 核心洞察与季节性结论
+    const findings = [
+      d.key_finding_1_head_term_dominates ? { title: "头部大词集中效应", ...d.key_finding_1_head_term_dominates } : null,
+      d.key_finding_2_seasonality ? { title: "季节性波动规律", ...d.key_finding_2_seasonality } : null,
+      d.key_finding_3_synchronised_lift ? { title: "细分词同步抬升效应", ...d.key_finding_3_synchronised_lift } : null,
+    ].filter(Boolean);
+
+    if (findings.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, "需求信号核心发现"),
+        ...findings.map((f) => h("div", { class: "item-card" },
+          h("div", { style: "font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px" },
+            h("span", { class: "tag tag-accent" }, "Insight"),
+            f.title
+          ),
+          f.observation ? h("div", { style: "color:var(--text-2);margin-bottom:4px" }, f.observation) : null,
+          f.implication ? h("div", { style: "font-size:12.5px;color:var(--text-3);line-height:1.6" }, `策略启示：${f.implication}`) : null,
+          f.seasonality_note ? h("div", { style: "font-size:12.5px;color:var(--text-3);line-height:1.6" }, f.seasonality_note) : null,
+          f.caveat ? h("div", { style: "font-size:11.5px;color:var(--warn);margin-top:4px" }, `注意：${f.caveat}`) : null
         ))
       ));
     }
+
+    // 4. 落地动作建议
+    if (d.action_implications?.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, `投放与运营建议（${d.action_implications.length}）`),
+        ...d.action_implications.map((act, i) => h("div", { class: "item-card", style: act.startsWith("★") ? "border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.04)" : "" },
+          h("span", { style: "font-weight:700;color:var(--accent-2);margin-right:6px" }, `${i + 1}.`),
+          act
+        ))
+      ));
+    }
+
+    // 5. 关键词列表
     if (d.keywords?.length) {
       add(h("div", { class: "section-block" },
-        h("div", { class: "sb-title" }, `关键词（${d.keywords.length}）`),
+        h("div", { class: "sb-title" }, `关键词数据（${d.keywords.length}）`),
         h("div", { class: "tbl-wrap" }, h("table", { class: "tbl" },
-          h("tr", {}, h("th", {}, "关键词"), h("th", {}, "数据")),
+          h("tr", {}, h("th", {}, "关键词"), h("th", {}, "搜索指标")),
           ...d.keywords.slice(0, 40).map((k) => h("tr", {},
-            h("td", { style: "font-family:var(--mono)" }, k.keyword || k.term || JSON.stringify(k).slice(0, 40)),
+            h("td", { style: "font-family:var(--mono);color:var(--text);font-weight:600" }, k.keyword || k.term || JSON.stringify(k).slice(0, 40)),
             h("td", { class: "num" }, JSON.stringify(Object.entries(k).filter(([key]) => key !== "keyword" && key !== "term").slice(0, 4)))
           ))
         ))
@@ -1119,64 +1355,255 @@ function renderPayload(name, d) {
   }
 
   if (name === "task5_performance.json") {
-    if (d.campaigns?.length) {
+    // 1. KPI 统计卡片网格
+    const totals = d.totals || d.account_totals || {};
+    let cost = totals.cost ?? totals.spend;
+    let conv = totals.conv ?? totals.conversions;
+    let roas = totals.roas ?? totals.blended_roas;
+    let cpa = totals.cpa ?? totals.blended_cpa;
+    const campaigns = d.campaigns || [];
+
+    if (cost == null && campaigns.length) {
+      cost = campaigns.reduce((acc, c) => acc + (Number(c.cost ?? c.spend) || 0), 0);
+    }
+    if (conv == null && campaigns.length) {
+      conv = campaigns.reduce((acc, c) => acc + (Number(c.conv ?? c.conversions) || 0), 0);
+    }
+    if (roas == null && cost && campaigns.length) {
+      const val = campaigns.reduce((acc, c) => acc + (Number(c.value) || 0), 0);
+      if (val > 0) roas = (val / cost).toFixed(2);
+    }
+    if (cpa == null && cost && conv) {
+      cpa = (cost / conv).toFixed(1);
+    }
+
+    const fmtNum = (n, dec = 0) => n == null ? "—" : Number(n).toLocaleString("en-US", { maximumFractionDigits: dec });
+
+    add(h("div", { class: "kpi-row" },
+      h("div", { class: "kpi-box" },
+        h("div", { class: "kpi-box-title" }, "总支出 (Total Spend)"),
+        h("div", { class: "kpi-box-num" }, cost != null ? `$${fmtNum(cost)}` : "—"),
+        h("div", { class: "kpi-box-sub" }, "累计真实历史消耗")
+      ),
+      h("div", { class: "kpi-box" },
+        h("div", { class: "kpi-box-title" }, "混合 ROAS (Blended)"),
+        h("div", { class: "kpi-box-num", style: roas >= 3 ? "color:var(--ok)" : roas >= 2 ? "color:var(--warn)" : "color:var(--err)" }, roas != null ? `${Number(roas).toFixed(2)}x` : "—"),
+        h("div", { class: "kpi-box-sub" }, "目标守住 3.0+")
+      ),
+      h("div", { class: "kpi-box" },
+        h("div", { class: "kpi-box-title" }, "混合 CPA (Blended)"),
+        h("div", { class: "kpi-box-num" }, cpa != null ? `$${fmtNum(cpa, 1)}` : "—"),
+        h("div", { class: "kpi-box-sub" }, "综合转化获客成本")
+      ),
+      h("div", { class: "kpi-box" },
+        h("div", { class: "kpi-box-title" }, "累计转化 (Conversions)"),
+        h("div", { class: "kpi-box-num" }, conv != null ? fmtNum(conv, 1) : "—"),
+        h("div", { class: "kpi-box-sub" }, `${campaigns.length} 条广告系列`)
+      )
+    ));
+
+    // 2. Campaigns 表格（ROAS 状态徽章）
+    if (campaigns.length) {
       add(h("div", { class: "section-block" },
-        h("div", { class: "sb-title" }, `Campaigns（${d.campaigns.length}）`),
+        h("div", { class: "sb-title" }, `广告系列明细（${campaigns.length}）`),
         h("div", { class: "tbl-wrap" }, h("table", { class: "tbl" },
-          h("tr", {}, h("th", {}, "名称"), h("th", {}, "Spend"), h("th", {}, "CPA"), h("th", {}, "ROAS"), h("th", {}, "CPC"), h("th", {}, "CVR"), h("th", {}, "转化")),
-          ...d.campaigns.map((c) => h("tr", {}, h("td", { style: "color:var(--text)" }, c.name || "—"), h("td", { class: "num" }, c.spend ?? "—"), h("td", { class: "num" }, c.cpa ?? "—"), h("td", { class: "num" }, c.roas ?? "—"), h("td", { class: "num" }, c.cpc ?? "—"), h("td", { class: "num" }, c.cvr ?? "—"), h("td", { class: "num" }, c.conversions ?? "—")))
+          h("tr", {},
+            h("th", {}, "Campaign 名称"),
+            h("th", {}, "Spend"),
+            h("th", {}, "ROAS"),
+            h("th", {}, "CPA"),
+            h("th", {}, "CPC"),
+            h("th", {}, "CVR"),
+            h("th", {}, "转化数")
+          ),
+          ...campaigns.map((c) => {
+            const r = Number(c.roas);
+            const rCls = isNaN(r) ? "" : r >= 3.0 ? "roas-high" : r >= 2.0 ? "roas-mid" : "roas-low";
+            return h("tr", {},
+              h("td", { style: "color:var(--text);font-weight:600" }, c.name || "—"),
+              h("td", { class: "num" }, c.cost != null || c.spend != null ? `$${fmtNum(c.cost ?? c.spend)}` : "—"),
+              h("td", {}, !isNaN(r) ? h("span", { class: `roas-badge ${rCls}` }, `${r.toFixed(2)}x`) : "—"),
+              h("td", { class: "num" }, c.cpa != null ? `$${fmtNum(c.cpa, 1)}` : "—"),
+              h("td", { class: "num" }, c.cpc != null ? `$${fmtNum(c.cpc, 2)}` : "—"),
+              h("td", { class: "num" }, c.cvr || "—"),
+              h("td", { class: "num" }, c.conv != null || c.conversions != null ? fmtNum(c.conv ?? c.conversions, 1) : "—")
+            );
+          })
         ))
       ));
     }
-    add(jsonCard("account_totals", d.account_totals));
+
+    // 3. 历史发现与诊断 (Findings)
+    if (d.findings?.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, `投放表现诊断与洞察（${d.findings.length}）`),
+        ...d.findings.map((f) => h("div", { class: "item-card", style: f.finding?.includes("★") ? "border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.03)" : "" },
+          h("div", { style: "font-weight:700;color:var(--text);font-size:13.5px;margin-bottom:6px" }, f.finding),
+          f.detail ? h("div", { style: "color:var(--text-2);font-size:12.5px;line-height:1.6" }, f.detail) : null,
+          f.implication ? h("div", { style: "color:var(--text-3);font-size:12px;margin-top:6px;line-height:1.6" }, `诊断：${f.implication}`) : null,
+          f.action ? h("div", { style: "margin-top:8px;padding:6px 10px;background:var(--panel-3);border-radius:6px;font-size:12px;color:var(--ok);border:1px solid rgba(74,222,128,.2)" }, `建议行动：${f.action}`) : null
+        ))
+      ));
+    }
+
+    // 4. 交叉验证 (Cross Reference)
+    if (d.cross_reference) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, "跨环节数据交叉验证 (Cross-Reference)"),
+        ...Object.entries(d.cross_reference).map(([k, v]) => h("div", { class: "item-card" },
+          h("b", { style: "color:var(--accent-2)" }, k),
+          h("div", { style: "margin-top:4px;color:var(--text-2);font-size:12.5px;line-height:1.6" }, String(v))
+        ))
+      ));
+    }
+
     add(jsonCard("promo_baseline", d.promo_baseline));
     return wrap;
   }
 
   if (name === "task6_strategy.json") {
+    // 1. 策略建议
     if (d.recommendations?.length) {
       add(h("div", { class: "section-block" },
-        h("div", { class: "sb-title" }, `策略建议（${d.recommendations.length}）`),
-        ...d.recommendations.map((r, i) => h("div", { class: "item-card" }, h("b", { style: "color:var(--accent-2)" }, `${i + 1}. `), r))
-      ));
-    }
-    if (d.selling_point_map?.length) {
-      add(h("div", { class: "section-block" },
-        h("div", { class: "sb-title" }, "卖点 × 痛点判定"),
-        ...d.selling_point_map.map((m) => h("div", { class: "item-card" },
-          h("span", {
-            class: "badge-plain",
-            style: {
-              主推: "background:var(--ok-soft);color:var(--ok)",
-              需小预算测试: "background:var(--warn-soft);color:var(--warn)",
-              缺口机会: "background:var(--accent-soft);color:#a5b4fc",
-            }[m.verdict] || "background:var(--panel-3);color:var(--text-2)",
-          }, m.verdict || "?"),
-          h("b", { style: "margin:0 8px;color:var(--text)" }, m.selling_point || "?"),
-          m.pain_point_text ? h("span", { style: "font-size:12px" }, `↔ ${m.pain_point_text}`) : null
+        h("div", { class: "sb-title" }, `核心策略建议（${d.recommendations.length}）`),
+        ...d.recommendations.map((r, i) => h("div", { class: "item-card", style: "border-left:3px solid var(--accent)" },
+          h("b", { style: "color:var(--accent-2);margin-right:8px" }, `${i + 1}.`),
+          h("span", { style: "color:var(--text);font-weight:500" }, r)
         ))
       ));
     }
-    add(jsonCard("budget 预算", d.budget));
-    add(jsonCard("stop_loss 止损", d.stop_loss));
-    add(jsonCard("kano_map", d.kano_map));
-    add(jsonCard("fogg_decision", d.fogg_decision));
+
+    // 2. KANO 属性分类卡片
+    if (d.kano_map && Object.keys(d.kano_map).length) {
+      const km = d.kano_map;
+      const buckets = { must: [], one: [], att: [], ind: [] };
+
+      if (Array.isArray(km.must_be || km.basic)) buckets.must.push(...(km.must_be || km.basic));
+      if (Array.isArray(km.performance || km.linear)) buckets.one.push(...(km.performance || km.linear));
+      if (Array.isArray(km.attractive || km.delighter)) buckets.att.push(...(km.attractive || km.delighter));
+      if (Array.isArray(km.indifferent)) buckets.ind.push(...km.indifferent);
+
+      // 如果 kano_map 是 key-value 映射 { 卖点: 分类 }
+      if (!buckets.must.length && !buckets.one.length && !buckets.att.length) {
+        for (const [sp, cat] of Object.entries(km)) {
+          const s = String(cat).toLowerCase();
+          if (s.includes("must") || s.includes("基本") || s.includes("必备")) buckets.must.push(sp);
+          else if (s.includes("one") || s.includes("linear") || s.includes("期望") || s.includes("线性")) buckets.one.push(sp);
+          else if (s.includes("att") || s.includes("delight") || s.includes("魅力") || s.includes("兴奋")) buckets.att.push(sp);
+          else buckets.ind.push(sp);
+        }
+      }
+
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, "KANO 需求属性分类"),
+        h("div", { class: "kano-wrap" },
+          h("div", { class: "kano-box" },
+            h("div", { class: "kano-title kano-must" }, "● 基本型 / 必备属性 (Must-be)"),
+            ...(buckets.must.length ? buckets.must.map(it => h("div", { class: "kano-item" }, typeof it === "string" ? it : it.feature || JSON.stringify(it))) : [h("div", { class: "kano-item", style: "opacity:.5" }, "无")])
+          ),
+          h("div", { class: "kano-box" },
+            h("div", { class: "kano-title kano-one" }, "● 期望型 / 线性属性 (Performance)"),
+            ...(buckets.one.length ? buckets.one.map(it => h("div", { class: "kano-item" }, typeof it === "string" ? it : it.feature || JSON.stringify(it))) : [h("div", { class: "kano-item", style: "opacity:.5" }, "无")])
+          ),
+          h("div", { class: "kano-box" },
+            h("div", { class: "kano-title kano-att" }, "● 兴奋型 / 魅力属性 (Attractive)"),
+            ...(buckets.att.length ? buckets.att.map(it => h("div", { class: "kano-item" }, typeof it === "string" ? it : it.feature || JSON.stringify(it))) : [h("div", { class: "kano-item", style: "opacity:.5" }, "无")])
+          )
+        )
+      ));
+    }
+
+    // 3. 福格行为模型 B=MAP 决策看板
+    if (d.fogg_decision && Object.keys(d.fogg_decision).length) {
+      const fd = d.fogg_decision;
+      const dom = (fd.dominant_path || "").toUpperCase();
+
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" },
+          "福格行为模型决策 (B = MAP)",
+          dom ? h("span", { class: "tag tag-accent", style: "margin-left:8px" }, `★ 主导路径：${dom}`) : null
+        ),
+        h("div", { class: "fogg-board" },
+          h("div", { class: "fogg-col m" },
+            h("div", { class: "fogg-letter" }, "M · Motivation (动机)"),
+            h("div", { class: "fogg-desc" }, fd.motivation?.description || fd.motivation?.dimension || (typeof fd.motivation === "string" ? fd.motivation : "痛苦消除 / 欲望唤醒")),
+            fd.motivation?.evidence_ref ? h("div", { class: "fogg-quote" }, `痛点证据：${fd.motivation.evidence_ref}`) : null
+          ),
+          h("div", { class: "fogg-col a" },
+            h("div", { class: "fogg-letter" }, "A · Ability (门槛击穿)"),
+            h("div", { class: "fogg-desc" }, fd.ability?.cost_cut || fd.ability?.description || (typeof fd.ability === "string" ? fd.ability : "价格锚点 / 分期免息 / 易用性")),
+            fd.ability?.expression ? h("div", { class: "fogg-quote" }, `呈现方式：${fd.ability.expression}`) : null
+          ),
+          h("div", { class: "fogg-col p" },
+            h("div", { class: "fogg-letter" }, "P · Prompt (行动触发)"),
+            h("div", { class: "fogg-desc" }, fd.prompt?.type ? `[${fd.prompt.type}] ${fd.prompt.expression || ""}` : (typeof fd.prompt === "string" ? fd.prompt : "限时紧迫感 / 倒计时 / 强 CTA")),
+            fd.prompt?.position ? h("div", { class: "fogg-quote" }, `触发位置：${fd.prompt.position}`) : null
+          )
+        )
+      ));
+    }
+
+    // 4. 卖点 ↔ 痛点映射校验
+    if (d.selling_point_map?.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, `计划卖点 ↔ 已验证痛点映射校验（${d.selling_point_map.length}）`),
+        ...d.selling_point_map.map((m) => {
+          const vCol = {
+            主推: "background:var(--ok-soft);color:var(--ok)",
+            需小预算测试: "background:var(--warn-soft);color:var(--warn)",
+            缺口机会: "background:var(--accent-soft);color:#a5b4fc",
+          }[m.verdict] || "background:var(--panel-3);color:var(--text-2)";
+          return h("div", { class: "item-card" },
+            h("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px" },
+              h("div", { style: "display:flex;align-items:center;gap:8px" },
+                h("span", { class: "badge-plain", style: `${vCol};font-weight:700` }, m.verdict || "判定"),
+                h("b", { style: "color:var(--text);font-size:13.5px" }, m.selling_point || "?")
+              ),
+              m.pain_point_ref ? h("span", { class: "tag", style: "font-family:var(--mono)" }, m.pain_point_ref) : null
+            ),
+            m.pain_point_text ? h("div", { style: "font-size:12.5px;color:var(--text-2);margin-bottom:4px" }, `对应痛点：${m.pain_point_text}`) : null,
+            m.evidence ? h("div", { style: "font-size:11.5px;color:var(--text-3);font-style:italic" }, `凭证数据：${m.evidence}`) : null
+          );
+        })
+      ));
+    }
+
+    // 5. 预算与止损策略
+    if (d.budget || d.stop_loss) {
+      add(h("div", { class: "grid grid-2" },
+        d.budget ? jsonCard("预算分配策略 (Budget)", d.budget) : null,
+        d.stop_loss ? jsonCard("止损信号与熔断规则 (Stop-Loss)", d.stop_loss) : null
+      ));
+    }
     return wrap;
   }
 
   if (name === "task7_creative.json") {
-    for (const b of d.briefs || []) {
-      add(h("div", { class: "item-card" },
-        h("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px" },
-          h("span", { class: "tag tag-accent", style: "font-family:var(--mono)" }, b.asset_id || "?"),
-          b.placement ? h("span", { class: "tag" }, b.placement) : null,
-          b.format ? h("span", { class: "tag" }, b.format) : null,
-          b.objective ? h("span", { class: "tag" }, b.objective) : null,
-        ),
-        b.copy ? h("div", { class: "mini-json", html: highlightJson(b.copy) }) : null,
+    // 1. 素材 Brief 卡片列表（前 3 秒钩子、分镜表、文案、AI 绘图 Prompt）
+    const briefs = d.briefs || [];
+    if (briefs.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, `素材 Brief 脚本明细（${briefs.length} 套交付）`),
+        ...briefs.map((b) => renderBriefCard(b))
       ));
     }
-    if (d.asset_matrix?.length) add(jsonCard("asset_matrix", d.asset_matrix));
+
+    // 2. 素材排产矩阵 (Asset Matrix)
+    if (d.asset_matrix?.length) {
+      add(h("div", { class: "section-block" },
+        h("div", { class: "sb-title" }, `素材排产矩阵 Asset Matrix（${d.asset_matrix.length}）`),
+        h("div", { class: "tbl-wrap" }, h("table", { class: "tbl" },
+          h("tr", {}, h("th", {}, "Asset ID"), h("th", {}, "版位 / 格式"), h("th", {}, "主打卖点"), h("th", {}, "福格路径"), h("th", {}, "目标")),
+          ...d.asset_matrix.map((m) => h("tr", {},
+            h("td", { style: "font-family:var(--mono);color:var(--text);font-weight:700" }, m.asset_id || "—"),
+            h("td", {}, `${m.placement || ""} ${m.format || ""}`),
+            h("td", {}, m.selling_point || "—"),
+            h("td", {}, m.fogg_path || m.path || "—"),
+            h("td", {}, m.objective || "—")
+          ))
+        ))
+      ));
+    }
     return wrap;
   }
 
@@ -1185,6 +1612,195 @@ function renderPayload(name, d) {
   for (const k of ["status", "sources", "facts", "inferences", "gaps"]) delete rest[k];
   add(jsonCard("载荷", rest));
   return wrap;
+}
+
+function renderTrendCard(trend) {
+  const card = h("div", { class: "trend-box" });
+  const rawVals = trend.values || [];
+  const parsed = [];
+
+  for (const item of rawVals) {
+    if (typeof item === "number") {
+      parsed.push({ label: "", val: item });
+    } else if (typeof item === "string") {
+      const match = item.match(/^(.*?):\s*(\d+(?:\.\d+)?)/);
+      if (match) parsed.push({ label: match[1], val: parseFloat(match[2]) });
+      else {
+        const num = parseFloat(item);
+        if (!isNaN(num)) parsed.push({ label: "", val: num });
+      }
+    } else if (item && typeof item === "object") {
+      const val = Number(item.value ?? item.val ?? item.v ?? 0);
+      parsed.push({ label: item.date ?? item.t ?? "", val });
+    }
+  }
+
+  const vals = parsed.map(p => p.val);
+  const min = vals.length ? Math.min(...vals) : 0;
+  const max = vals.length ? Math.max(...vals) : 100;
+  const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+
+  card.append(
+    h("div", { class: "trend-head" },
+      h("div", { class: "trend-term" }, trend.term || "Google Trends 趋势走势"),
+      h("div", { class: "trend-stat-pills" },
+        h("span", { class: "trend-pill" }, "峰值：", h("b", { style: "color:#f87171" }, String(max))),
+        h("span", { class: "trend-pill" }, "谷底：", h("b", { style: "color:#60a5fa" }, String(min))),
+        h("span", { class: "trend-pill" }, "均值：", h("b", {}, avg.toFixed(1))),
+        h("span", { class: "trend-pill" }, "数据点：", h("b", {}, String(vals.length)))
+      )
+    )
+  );
+
+  if (trend.seasonality_note) {
+    card.append(h("div", { style: "font-size:12.5px;color:var(--text-3);margin-bottom:12px;line-height:1.5" }, trend.seasonality_note));
+  }
+
+  if (vals.length >= 2) {
+    const W = 620;
+    const H = 100;
+    const padX = 20;
+    const padY = 16;
+    const range = (max - min) || 1;
+    const pts = vals.map((v, i) => ({
+      x: padX + (i / (vals.length - 1)) * (W - 2 * padX),
+      y: H - padY - ((v - min) / range) * (H - 2 * padY),
+      val: v,
+      label: parsed[i].label,
+    }));
+
+    const polyPoints = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const areaD = `M ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} ` +
+      pts.slice(1).map(p => `L ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") +
+      ` L ${pts[pts.length - 1].x.toFixed(1)},${H} L ${pts[0].x.toFixed(1)},${H} Z`;
+
+    const peakPt = pts.reduce((prev, curr) => curr.val > prev.val ? curr : prev, pts[0]);
+    const troughPt = pts.reduce((prev, curr) => curr.val < prev.val ? curr : prev, pts[0]);
+    const gradId = "trend-grad-" + Math.random().toString(36).slice(2, 7);
+
+    const svgWrap = h("div", { class: "trend-chart-container" });
+    svgWrap.innerHTML = `
+      <svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0"/>
+          </linearGradient>
+        </defs>
+        <line x1="${padX}" y1="${padY}" x2="${W - padX}" y2="${padY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+        <line x1="${padX}" y1="${H / 2}" x2="${W - padX}" y2="${H / 2}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+        <line x1="${padX}" y1="${H - padY}" x2="${W - padX}" y2="${H - padY}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+        <path d="${areaD}" fill="url(#${gradId})"/>
+        <polyline points="${polyPoints}" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${peakPt.x.toFixed(1)}" cy="${peakPt.y.toFixed(1)}" r="4.5" fill="#f87171" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="${troughPt.x.toFixed(1)}" cy="${troughPt.y.toFixed(1)}" r="4" fill="#60a5fa" stroke="#fff" stroke-width="1.5"/>
+      </svg>
+    `;
+    card.append(svgWrap);
+  }
+
+  return card;
+}
+
+function renderBriefCard(b) {
+  const card = h("div", { class: "brief-full-card" });
+
+  // 1. Meta 栏
+  card.append(
+    h("div", { class: "brief-meta-bar" },
+      h("span", { class: "tag tag-accent", style: "font-family:var(--mono);font-size:13px;font-weight:700" }, b.asset_id || "Brief"),
+      b.placement ? h("span", { class: "tag" }, b.placement) : null,
+      b.format ? h("span", { class: "tag" }, b.format) : null,
+      b.objective ? h("span", { class: "tag" }, b.objective) : null,
+      b.ad_type ? h("span", { class: "tag" }, b.ad_type) : null,
+      b.strategy?.kano_class ? h("span", { class: "tag", style: "background:rgba(244,114,182,.15);color:#f472b6" }, `KANO: ${b.strategy.kano_class}`) : null
+    )
+  );
+
+  // 2. 前 3 秒黄金钩子
+  const hook = b.copy?.hook_0_3s || b.copy?.hook;
+  if (hook) {
+    card.append(
+      h("div", { class: "hook-banner" },
+        h("div", { class: "hook-tag" }, "⚡ 前 3 秒黄金痛点钩子 (Hook 0–3s)"),
+        h("div", { class: "hook-text" }, hook)
+      )
+    );
+  }
+
+  // 3. 文案组合
+  const copyLines = [];
+  if (b.copy?.primary_text) copyLines.push(["主文案", b.copy.primary_text]);
+  if (b.copy?.headlines?.length) copyLines.push(["标题选项", b.copy.headlines.join(" | ")]);
+  if (b.copy?.body_lines?.length) copyLines.push(["正文行", b.copy.body_lines.join(" / ")]);
+  if (b.copy?.cta) copyLines.push(["CTA 按钮", b.copy.cta]);
+
+  if (copyLines.length) {
+    card.append(
+      h("div", { style: "background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px" },
+        h("div", { style: "font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px" }, "广告文案体系 (Copy)"),
+        ...copyLines.map(([lbl, txt]) => h("div", { style: "font-size:12.5px;margin-bottom:4px;color:var(--text-2)" },
+          h("b", { style: "color:var(--text);margin-right:6px" }, `${lbl}：`),
+          txt
+        ))
+      )
+    );
+  }
+
+  // 4. 分镜脚本表 (Shot List)
+  const shots = b.visual_direction?.shot_list || [];
+  if (shots.length) {
+    card.append(
+      h("div", { style: "margin-bottom:14px" },
+        h("div", { style: "font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px" }, "分镜脚本 (Shot List)"),
+        h("div", { class: "tbl-wrap" },
+          h("table", { class: "shot-table" },
+            h("tr", {}, h("th", {}, "分镜 / 时间"), h("th", {}, "画面动作 (Visual)"), h("th", {}, "旁白 / 音效 (Audio)"), h("th", {}, "贴片文字 (Overlay)")),
+            ...shots.map((s, idx) => {
+              const time = s.time || s.shot || `Shot ${idx + 1}`;
+              const visual = s.visual || s.scene || (typeof s === "string" ? s : "—");
+              const audio = s.audio || s.vo || "—";
+              const overlay = s.overlay || s.overlay_text || "—";
+              return h("tr", {},
+                h("td", { class: "shot-time" }, time),
+                h("td", {}, visual),
+                h("td", {}, audio),
+                h("td", {}, overlay)
+              );
+            })
+          )
+        )
+      )
+    );
+  }
+
+  // 5. AI 绘图 Prompt 参考
+  const prompts = b.reference_prompts || [];
+  if (prompts.length) {
+    card.append(
+      h("div", { style: "margin-bottom:12px" },
+        h("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:6px" },
+          h("div", { style: "font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase" }, `AI 绘图 Prompt 参考（${prompts.length}）`),
+          h("button", { class: "btn btn-ghost btn-sm", onclick: () => copyText(prompts.join("\n\n"), "已复制全部 Prompt") }, h("span", { html: I.copy }), "复制全部 Prompt")
+        ),
+        ...prompts.map((p, i) => h("div", { class: "item-card", style: "background:#090d16;font-family:var(--mono);font-size:11.5px;color:#cbd5e1;display:flex;justify-content:space-between;align-items:flex-start;gap:10px" },
+          h("span", {}, h("b", { style: "color:#f0abfc;margin-right:6px" }, `[P${i+1}]`), p),
+          h("button", { class: "btn btn-ghost btn-sm", style: "padding:2px 8px;flex-shrink:0", onclick: () => copyText(p, "已复制 Prompt") }, "复制")
+        ))
+      )
+    );
+  }
+
+  // 6. 验收清单 (Acceptance Checklist)
+  if (b.acceptance_checklist?.length) {
+    card.append(
+      h("div", { style: "display:flex;gap:6px;flex-wrap:wrap;margin-top:10px" },
+        ...b.acceptance_checklist.map(chk => h("span", { class: "tag", style: "background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.2)" }, `✓ ${chk}`))
+      )
+    );
+  }
+
+  return card;
 }
 
 function tbl(title, rows) {
@@ -1238,6 +1854,7 @@ async function viewReport() {
         h("a", { class: "btn btn-sm", href: `/api/output/${res.name}/download`, style: "text-decoration:none" }, h("span", { html: I.download }), "下载 .md")
       )
     );
+
     let htmlText;
     if (window.marked) {
       marked.setOptions({ gfm: true, breaks: true });
@@ -1245,7 +1862,38 @@ async function viewReport() {
     } else {
       htmlText = `<pre style="white-space:pre-wrap">${esc(md)}</pre>`;
     }
-    wrap.append(h("div", { class: "md-body", html: htmlText }));
+
+    const mdBody = h("div", { class: "md-body", html: htmlText });
+
+    // 提取并构建 TOC 目录导航
+    const headings = $$( "h1, h2, h3", mdBody );
+    if (headings.length > 1) {
+      const toc = h("div", { class: "report-toc" },
+        h("div", { class: "report-toc-title" }, "目录导航 (TOC)")
+      );
+
+      headings.forEach((hd, idx) => {
+        const id = `report-sec-${idx}`;
+        hd.id = id;
+        const level = hd.tagName.toLowerCase();
+        const item = h("a", {
+          class: `toc-item ${level}`,
+          href: `#${id}`,
+          onclick: (e) => {
+            e.preventDefault();
+            hd.scrollIntoView({ behavior: "smooth", block: "start" });
+            $$(".toc-item", toc).forEach(el => el.style.borderLeftColor = "transparent");
+            item.style.borderLeftColor = "var(--accent)";
+          }
+        }, hd.textContent);
+        toc.append(item);
+      });
+
+      const layout = h("div", { class: "report-layout" }, toc, mdBody);
+      wrap.append(layout);
+    } else {
+      wrap.append(mdBody);
+    }
   } catch (e) {
     wrap.innerHTML = "";
     wrap.append(h("div", { class: "card" }, `加载失败：${esc(e.message)}`));

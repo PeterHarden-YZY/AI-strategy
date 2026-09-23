@@ -394,6 +394,17 @@ jm = JobManager()
 app = FastAPI(title="DTC 广告策略引擎 · 操作平台", version="1.0")
 
 
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if any(path.endswith(ext) for ext in (".js", ".css", ".html")) or path == "/":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 class PreRouteReq(BaseModel):
     product_url: str = ""
     product_text: str = ""
@@ -427,6 +438,52 @@ def _build_phases(stage: str, options: dict[str, Any]) -> list[dict]:
     return phases
 
 
+PRESETS = [
+    {
+        "id": "huanuo_desk",
+        "title": "HUANUO 63\" Premium Topaz (产品广告)",
+        "tag": "product",
+        "desc": "双电机 L 型升降桌，高载重与大桌面定位，已发布产品 URL 模式",
+        "params": {
+            "product_url": "https://www.huanuo.com/products/huanuo-63-inch-electric-standing-desk-topaz",
+            "product_text": "HUANUO 63\" Premium Topaz L-Shaped Electric Standing Desk, dual motors, 176 lbs capacity, anti-collision sensor, memory presets, solid alloy steel frame, retail $1099.99.",
+            "promo_url": "",
+            "promo_text": "",
+            "goal_text": "想提升转化多卖货，对齐核心客群",
+            "market": "US",
+        },
+    },
+    {
+        "id": "black_friday_promo",
+        "title": "黑五限时大促 20% OFF (活动广告)",
+        "tag": "promo",
+        "desc": "全场满减限时大促，零容错折扣活动，手工简报模式",
+        "params": {
+            "product_url": "",
+            "product_text": "",
+            "promo_url": "https://www.huanuo.com/promo/black-friday-2026",
+            "promo_text": "黑五限时全场 20% OFF，优惠码 BF20，满 $300 起用，活动周期 11/20-11/30，售完即止",
+            "goal_text": "黑五活动冲量，提升购买转化与 ROI",
+            "market": "US",
+        },
+    },
+    {
+        "id": "hybrid_clearance",
+        "title": "Topaz 升降桌秋季清仓组合 (混合广告)",
+        "tag": "hybrid",
+        "desc": "指定热销品 + 限时直降 $150 优惠券，同时具备产品特征与限时让利",
+        "params": {
+            "product_url": "https://www.huanuo.com/products/huanuo-63-inch-electric-standing-desk-topaz",
+            "product_text": "HUANUO 63\" Topaz 电动升降桌，双电机高承重，静音升降",
+            "promo_url": "",
+            "promo_text": "秋季换新限时直降 $150，限量 500 台，code FALL150，截止 10/15",
+            "goal_text": "兼顾品牌心智与当期购买转化，防守竞品流量",
+            "market": "US",
+        },
+    },
+]
+
+
 # ---- 元数据 / 健康 ----
 
 
@@ -439,7 +496,14 @@ def get_meta() -> dict:
         "collection_steps": COLLECTION_STEP_META,
         "strategy_steps": STRATEGY_STEP_META,
         "objectives": list(OBJECTIVES),
+        "presets": PRESETS,
     }
+
+
+@app.get("/api/presets")
+def get_presets() -> dict:
+    return {"presets": PRESETS}
+
 
 
 @app.get("/api/health")
@@ -649,6 +713,37 @@ def get_scratch(name: str) -> dict:
         "size": st.st_size,
         "data": payload if payload else {"status": "failed", "gaps": ["JSON 解析失败"]},
         "raw": p.read_text(encoding="utf-8", errors="replace"),
+    }
+
+
+class ScratchUpdateReq(BaseModel):
+    data: dict[str, Any] | None = None
+    raw: str | None = None
+
+
+@app.put("/api/scratch/{name}")
+def update_scratch(name: str, req: ScratchUpdateReq) -> dict:
+    if name not in KNOWN_SCRATCH or not NAME_RE.match(name):
+        raise HTTPException(404, "未知的 scratch 文件")
+    p = paths.SCRATCH / name
+    if req.data is not None:
+        content = json.dumps(req.data, ensure_ascii=False, indent=2)
+    elif req.raw is not None:
+        try:
+            parsed = json.loads(req.raw)
+            content = json.dumps(parsed, ensure_ascii=False, indent=2)
+        except Exception as e:
+            raise HTTPException(400, f"无效的 JSON 格式：{e}")
+    else:
+        raise HTTPException(400, "必须提供 data 或 raw 内容")
+    p.write_text(content, encoding="utf-8")
+    st = p.stat()
+    return {
+        "ok": True,
+        "name": name,
+        "size": st.st_size,
+        "mtime": datetime.fromtimestamp(st.st_mtime).astimezone().isoformat(timespec="seconds"),
+        "note": "数据已成功保存",
     }
 
 
